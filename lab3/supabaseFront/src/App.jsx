@@ -1,121 +1,158 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
+import { useEffect, useState } from "react";
+import "./App.css";
+import supabase from "./supabase-client";
 function App() {
-  const [count, setCount] = useState(0)
+  const [todoList, setTodoList] = useState([]);
+  const [formData, setFormData] = useState({
+    nombre: "",
+    apellido: "",
+    email: "",
+    edad: "",
+    esAdmin: false,
+  });
+
+  async function consulta() {
+    const { data, error } = await supabase.from("usuarios").select("*");
+    console.log(data);
+    if (error) {
+      console.log("Error de conexion en consulta: ", error);
+    } else {
+      setTodoList(data);
+    }
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    consulta();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const addTodo = async () => {
+    if (!formData.nombre.trim()) return;
+
+    const newTodoData = {
+      nombre: formData.nombre.trim(),
+      apellido: formData.apellido.trim(),
+      email: formData.email.trim(),
+      edad: Number(formData.edad) || 0,
+      esAdmin: formData.esAdmin,
+    };
+    console.log([newTodoData]);
+    const { data, error } = await supabase
+      .from("usuarios")
+      .insert([newTodoData])
+      .select(); // Esto hace que retorne los datos insertados
+    if (error) {
+      console.log("Error en el insert: ", error);
+    } else {
+      // data será un array, toma el primer elemento
+      if (data?.[0]) {
+        setTodoList((prev) => [...prev, data[0]]);
+      }
+      setFormData({
+        nombre: "",
+        apellido: "",
+        email: "",
+        edad: "",
+        esAdmin: false,
+      });
+    }
+  };
+
+  const completeTask = async (id, esAdmin) => {
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ esAdmin: !esAdmin })
+      .eq("id", id);
+    if (error) {
+      console.log("error en el update task: ", error);
+    } else {
+      const updatedTodoList = todoList.map((todo) =>
+        todo.id === id ? { ...todo, esAdmin: !esAdmin } : todo,
+      );
+      setTodoList(updatedTodoList);
+    }
+  };
+  const deleteTask = async (id) => {
+    const { error } = await supabase
+      .from("usuarios")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      console.log("error deleting task: ", error);
+    } else {
+      setTodoList((prev) => prev.filter((todo) => todo.id !== id));
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div>
+      {" "}
+      <h1>Usuarios</h1>
+      <div>
+        <input
+          type="text"
+          name="nombre"
+          placeholder="Nombre"
+          value={formData.nombre}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="apellido"
+          placeholder="Apellido"
+          value={formData.apellido}
+          onChange={handleChange}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleChange}
+        />
+        <input
+          type="number"
+          name="edad"
+          placeholder="Edad"
+          value={formData.edad}
+          onChange={handleChange}
+        />
+        <label>
+          <input
+            type="checkbox"
+            name="esAdmin"
+            checked={formData.esAdmin}
+            onChange={handleChange}
+          />
+          Es Admin
+        </label>
+        <button onClick={addTodo}>Añadir Usuario</button>
+      </div>
+      <ul>
+        {todoList.map((todo) => (
+          <li key={todo.id}>
+            <p>
+              {todo.nombre} {todo.apellido}
+            </p>
+            <p>{todo.email}</p>
+            <p>Edad: {todo.edad}</p>
+            <button onClick={() => completeTask(todo.id, todo.esAdmin)}>
+              {" "}
+              {todo.esAdmin ? "Es Admin" : "No es Admin"}
+            </button>
+            <button onClick={() => deleteTask(todo.id)}> Borrar Usuario</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
-
-export default App
+export default App;
