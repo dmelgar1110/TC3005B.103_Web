@@ -1,0 +1,36 @@
+
+.App {
+  max-width: 560px;
+  margin: 24px auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.input-group {
+  display: grid;
+  gap: 6px;
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn {
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-encrypt {
+  background: black;
+}
+
+.btn-decrypt {
+  background: gray;
+}
+
